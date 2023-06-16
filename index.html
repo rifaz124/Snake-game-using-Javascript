@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Snake Game</title>
+    <style>
+        body {
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .games {
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #game-name {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        #score {
+            color: #ff0000;
+            font-size: 18px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+        }
+
+        #game-board {
+            background-color: #222;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: grid;
+            gap: 1px;
+            grid-template-columns: repeat(20, 1fr);
+            width: 400px;
+            height: 400px;
+        }
+
+        .snake {
+            background-color: rgb(10, 144, 247);
+            box-shadow: 0 0 10px rgba(37, 235, 218, 0.5);
+            border: 1px solid black;
+            transition: background-color 0.2s ease;
+        }
+
+        .snake:hover {
+            background-color: rgb(0, 119, 204);
+        }
+
+        .food {
+            background-color: lime;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            transition: background-color 0.2s ease;
+        }
+
+        .food:hover {
+            background-color: #00cc00;
+        }
+
+        .controls {
+            display: grid;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .control-button {
+            width: 40px;
+            height: 40px;
+            background-color: #222;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .control-button:hover {
+            background-color: #444;
+        }
+
+        #up-button {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        #right-button {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        #down-button {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        #left-button {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        /* Media query for mobile devices */
+        @media (max-width: 600px) {
+            .control-button {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+
+            #up-button {
+                grid-column: 2;
+                grid-row: 1;
+            }
+
+            #right-button {
+                grid-column: 3;
+                grid-row: 2;
+            }
+
+            #down-button {
+                grid-column: 2;
+                grid-row: 3;
+            }
+
+            #left-button {
+                grid-column: 1;
+                grid-row: 2;
+            }
+        }
+
+        @media (max-width: 600px) {
+            #game-board {
+                width: 80vw;
+                height: 80vw;
+                max-width: 400px;
+                max-height: 400px;
+            }
+        }
+
+        /* New styles for leaderboard */
+        .leaderboard {
+            background-color: #111;
+            color: #fff;
+            padding: 10px;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            width: 300px;
+            font-size: 14px;
+        }
+
+        .leaderboard-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .leaderboard-name {
+            flex-grow: 1;
+        }
+
+        .leaderboard-score {
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="games">
+        <div id="game-name">Snake Game</div>
+        <div id="score">Score: 0</div>
+        <div id="game-board"></div>
+        <div class="controls">
+            <button class="control-button" id="up-button">&#8593;</button>
+            <button class="control-button" id="right-button">&#8594;</button>
+            <button class="control-button" id="down-button">&#8595;</button>
+            <button class="control-button" id="left-button">&#8592;</button>
+        </div>
+    </div>
+
+    <div class="leaderboard">
+        <div class="leaderboard-title">Leaderboard</div>
+        <ul class="leaderboard-list" id="leaderboard-list"></ul>
+    </div>
+    <script src="https://apis.google.com/js/api.js"></script>
+
+
+    <script>
+        // Game configuration
+        const gridSize = 20;
+        const tileCount = gridSize * gridSize;
+        const gameBoard = document.getElementById('game-board');
+        const scoreDisplay = document.getElementById('score');
+        const leaderboardList = document.getElementById('leaderboard-list');
+
+        // Snake variables
+        let snake = [2, 1, 0]; // Initial snake position
+        let snakeDirection = 1; // 0: up, 1: right, 2: down, 3: left
+
+        // Food variables
+        let food = 0;
+
+        // Score variable
+        let score = 0;
+
+       
+
+        function createGrid() {
+            for (let i = 0; i < tileCount; i++) {
+                const tile = document.createElement('div');
+                tile.classList.add('snake');
+                gameBoard.appendChild(tile);
+            }
+        }
+
+        function drawSnake() {
+            gameBoard.querySelectorAll('.snake').forEach((tile) => {
+                tile.classList.remove('snake');
+            });
+
+            snake.forEach((index) => {
+                gameBoard.children[index].classList.add('snake');
+            });
+        }
+
+        function drawFood() {
+            gameBoard.querySelectorAll('.food').forEach((tile) => {
+                tile.classList.remove('food');
+            });
+
+            gameBoard.children[food].classList.add('food');
+        }
+
+        function moveSnake() {
+            const head = snake[0];
+            let nextIndex = 0;
+
+            switch (snakeDirection) {
+                case 0: // Up
+                    nextIndex = head - gridSize < 0 ? tileCount - gridSize + head : head - gridSize;
+                    break;
+                case 1: // Right
+                    nextIndex = (head + 1) % gridSize === 0 ? head - (gridSize - 1) : head + 1;
+                    break;
+                case 2: // Down
+                    nextIndex = (head + gridSize) % tileCount;
+                    break;
+                case 3: // Left
+                    nextIndex = head % gridSize === 0 ? head + (gridSize - 1) : head - 1;
+                    break;
+            }
+
+            if (snake.includes(nextIndex)) {
+                gameOver();
+                return;
+            }
+
+            snake.unshift(nextIndex);
+
+            if (nextIndex === food) {
+                score++;
+                scoreDisplay.textContent = 'Score: ' + score;
+                generateFood();
+            } else {
+                snake.pop();
+            }
+
+            drawSnake();
+        }
+
+        function generateFood() {
+            food = Math.floor(Math.random() * tileCount);
+            drawFood();
+        }
+
+        function changeDirection(event) {
+            const keyPressed = event.keyCode;
+
+            // ArrowUp key
+            if (keyPressed === 38 && snakeDirection !== 2) {
+                snakeDirection = 0;
+            }
+
+            // ArrowRight key
+            if (keyPressed === 39 && snakeDirection !== 3) {
+                snakeDirection = 1;
+            }
+
+            // ArrowDown key
+            if (keyPressed === 40 && snakeDirection !== 0) {
+                snakeDirection = 2;
+            }
+
+            // ArrowLeft key
+            if (keyPressed === 37 && snakeDirection !== 1) {
+                snakeDirection = 3;
+            }
+        }
+
+        function changeDirectionTouch(direction) {
+            // Up
+            if (direction === 'up' && snakeDirection !== 2) {
+                snakeDirection = 0;
+            }
+
+            // Right
+            if (direction === 'right' && snakeDirection !== 3) {
+                snakeDirection = 1;
+            }
+
+            // Down
+            if (direction === 'down' && snakeDirection !== 0) {
+                snakeDirection = 2;
+            }
+
+            // Left
+            if (direction === 'left' && snakeDirection !== 1) {
+                snakeDirection = 3;
+            }
+        }
+
+        function gameOver() {
+
+            const playerName = prompt('Game Over! Enter your name:');
+            const playerScore = score;
+
+        
+
+
+            const playerData = { name: playerName, score: score };
+
+            // Retrieve existing player data from local storage
+            let leaderboardData = JSON.parse(localStorage.getItem('leaderboardData')) || [];
+
+            // Add the current player's data to the leaderboard
+            leaderboardData.push(playerData);
+
+            // Sort the leaderboard by score (descending order)
+            leaderboardData.sort((a, b) => b.score - a.score);
+
+            // Limit the leaderboard to a certain number of entries (e.g., top 10)
+            const maxEntries = 10;
+            leaderboardData = leaderboardData.slice(0, maxEntries);
+
+            // Store the updated leaderboard in local storage
+            localStorage.setItem('leaderboardData', JSON.stringify(leaderboardData));
+
+            // Update the leaderboard display
+            leaderboardList.innerHTML = '';
+            leaderboardData.forEach((entry, index) => {
+                const listItem = document.createElement('li');
+                listItem.classList.add('leaderboard-item');
+
+                const name = document.createElement('div');
+                name.classList.add('leaderboard-name');
+                name.textContent = `${index + 1}. ${entry.name}`;
+
+                const score = document.createElement('div');
+                score.classList.add('leaderboard-score');
+                score.textContent = entry.score;
+
+                listItem.appendChild(name);
+                listItem.appendChild(score);
+
+                leaderboardList.appendChild(listItem);
+            });
+
+            // Restart the game
+            snake = [2, 1, 0];
+            snakeDirection = 1;
+            score = 0;
+            scoreDisplay.textContent = 'Score: ' + score;
+            drawSnake();
+            generateFood();
+        }
+
+        function startGame() {
+            createGrid();
+            drawSnake();
+            generateFood();
+            document.addEventListener('keydown', changeDirection);
+
+            const upButton = document.getElementById('up-button');
+            const rightButton = document.getElementById('right-button');
+            const downButton = document.getElementById('down-button');
+            const leftButton = document.getElementById('left-button');
+
+            upButton.addEventListener('click', () => changeDirectionTouch('up'));
+            rightButton.addEventListener('click', () => changeDirectionTouch('right'));
+            downButton.addEventListener('click', () => changeDirectionTouch('down'));
+            leftButton.addEventListener('click', () => changeDirectionTouch('left'));
+
+            setInterval(moveSnake, 200);
+        }
+
+        startGame();
+
+    </script>
+</body>
+
+</html>
